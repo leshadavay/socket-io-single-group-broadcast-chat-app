@@ -1,0 +1,89 @@
+<style>
+    
+    #chat-box{
+        background-color: rgb(223, 223, 223);
+        border: 1px solid rgb(73, 73, 73);
+        height: 500px;
+        position: relative;
+        width: 100%;
+    }
+   #send-box{
+        width: 90%;
+        position: absolute;
+        bottom: 0px;
+        
+    }
+    .alert{
+        color:rgb(201, 65, 31);
+        text-align: center;
+    }
+</style>
+
+<h1>Chat Room: <u id="room_name"><%= room_name %></u></h1>
+<h1>User Name: <u id="user_name"><%= user_name %></u></h1>
+<div id="chat-box">
+    <div id="msg_list"></div>
+    <div id="send-box">
+        <form id="send_msg_from">
+            <input type="text" name="msg" autocomplete="off">
+            <button type="submit" >send</button>
+        </form>
+    </div>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    var room_id=$("#room_name").text();
+    var user_id=$("#user_name").text();
+    var socket=io.connect("http://localhost:8000/imessage");
+
+    socket.on('connect',function(){
+        console.log('connected: ',room_id);
+        
+        socket.emit('room:start',{user_id:user_id,room_id:room_id});
+         
+    });
+
+    socket.on('room:alert',function(msg){
+        console.log('got alert msg: ',msg);
+        $("#msg_list").append('<div class=\'alert\'> <span> '+msg+'</span></div>');
+    });
+
+
+    socket.on('msg:last',function(data){
+        console.log('got last msg: ',data);
+        if(data){
+            $("#msg_list").append('<div> <span><b>'+data.user_id+' : </b></span><span>'+data.msg+'<span></div>');
+        }
+    });
+
+    socket.on('msg:history',function(data){
+        console.log('msg history: ',data);
+        if(data){
+            for(row in data){
+                $("#msg_list").append('<div> <span><b>'+data[row].user_id+' : </b></span><span>'+data[row].msg+'<span></div>');
+            }
+        }
+    });
+    socket.on('msg:broadcast',function(data){
+        console.log('msg broadcast');
+        if(data){
+            $("#msg_list").append('<div class=\'alert\'> <span> '+data.name+' : '+data.msg+'</span></div>');
+        }
+        
+    });
+     
+
+    $(function(){
+        $("#send_msg_from").submit(function(e){
+            e.preventDefault();
+            
+            var msg=$("input[name=msg]").val();
+            
+            //console.log('msg: '+msg);
+            socket.emit('msg:send',{user_id:user_id, room_id:room_id,msg:msg});
+            $("input[name=msg]").val('');
+            return false;
+        });
+    });
+</script>

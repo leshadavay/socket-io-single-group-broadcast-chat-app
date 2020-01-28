@@ -1,0 +1,22 @@
+{
+  "name": "group_chat_ex",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "ejs": "^3.0.1",
+    "express": "^4.17.1",
+    "forever": "^2.0.0",
+    "forever-monitor": "^2.0.0",
+    "mongoose": "^5.8.4",
+    "mysql": "^2.17.1",
+    "path": "^0.12.7",
+    "socket.io": "^2.3.0"
+  }
+}

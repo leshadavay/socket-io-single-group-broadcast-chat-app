@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+    <head>
+
+    </head>
+    <style>
+        body{
+            width: 100%;
+        }
+        #room_container{
+            position: absolute;
+            left: 0px;
+            padding: 10px;
+        }
+        #user_container{
+            position: absolute;
+            right: 0px;
+            padding: 10px;
+        }
+        #broadcast_container{
+            position: absolute;
+            width: 20%;
+            top: 10%;
+            left: 40%;
+            right: 40%;
+        }
+        .available{
+            color:rgb(4, 196, 4);
+        }
+        .non_available{
+            color:red;
+        }
+    </style>
+    <body>
+        <h1>Hello <span id="user_name" class="non_available">UNKNOWN</span><span> !</span></h1>
+        <div>
+            <button id="login">LogIn</button> <button id="logout">LogOut</button>
+        </div>
+        <div id="room_container">
+            <b>ROOM LIST</b>
+            <ul id="room_list">
+
+            </ul>
+            <button id="create_room" onclick="create_room()">create room</button>
+        </div>
+        <div id="user_container">
+            <b>USER LIST</b>
+             <ul id="user_list">
+
+             </ul>
+             <button id="signin">CreateUser</button>
+        </div>
+        
+        <div id="broadcast_container">
+            <input type="text" name="broadcast_msg" id="broadcast_msg" placeholder="Emergency message" style="border: 1px solid red">
+            <button id="broadcast_msg_send" style="border: 1px solid red"> send</button>
+        </div>
+     
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+    </body>
+</html>
+
+<script>
+    
+     
+    /*
+    var socket = io.connect('http://localhost:3000');
+    socket.on('connect',function(data){
+        socket.emit('join','hello world from client');
+    });
+    socket.on('broad',function(data){
+        $("#future").append(data+'<br>');
+    });
+    $('#form').submit(function(e){
+        e.preventDefault();
+        var msg=$("#chat_input").val();
+        socket.emit('messages',msg);
+    });
+    */
+    var socket=io.connect("http://localhost:8000/imessage");
+    
+
+    socket.on('connect',function(data){
+        console.log('client side connected and fetched list: ',data);
+        //socket.emit('room:fetch_all',{});
+        get_username();
+    });
+  
+    socket.on('room:room_list',function(data){
+        console.log('client side fetched room list: ',data);
+        if(data){
+            $("#room_list").empty();
+            for(row in data){
+                $("#room_list").append("<li><button class='rooms' onclick='join_room(this)' value='"+data[row].room_no+"' >"+data[row].room_no+"</button></li>");
+            }   
+        }
+        
+    });
+
+    socket.on('user:user_list',function(data){
+        console.log('client side fetched user list: ',data);
+        if(data){
+            $("#user_list").empty();
+                for(row in data){
+                    var disabled=data[row].is_online?"":"disabled";
+                    $("#user_list").append("<li><button class='rooms' onclick='join_user(this)' "+disabled+" value='"+data[row].name+"' >"+data[row].name+"</button></li>");
+                }
+        }
+        
+    });
+
+    socket.on('room:redirect',function(url){
+        console.log('room start:',url);
+        
+        if(url){
+            window.location.href=decodeURI(url);
+        }
+    });
+
+    socket.on('room:alert',function(msg){
+        console.log('got alert msg: ',msg);
+        //$("#msg_list").append('<div class=\'alert\'> <span> '+msg+'</span></div>');
+    });
+
+    socket.on('alert',function(data){
+        alert(data.msg);
+        if(data.code==1){
+            remove_username();
+        }
+    });
+    function create_room(){
+        var room_name=prompt('enter room name');
+        var user_name=$("#user_name").text();
+        var send_param={
+            user_id:user_name,
+            room_no:room_name,
+        }
+        socket.emit('room:create',send_param);
+        
+    }
+
+    function join_room(node){
+         
+        var username=$('#user_name').text();
+        if(username=="UNKNOWN") {
+            alert('login first');
+            return;
+        }
+        var send_param={
+            room_name: $(node).val(),
+            user_name:username,
+        }
+        
+        socket.emit('room:open',send_param);
+    }
+    function update_session(user_name){
+        sessionStorage.setItem('user_name',user_name);
+        $("#user_name").text(user_name);
+        $("#user_name").removeClass('non_available');
+        $("#user_name").addClass('available');
+    }
+    function get_username(){
+        var username= sessionStorage.getItem('user_name');
+        if(username) {
+            $("#user_name").text(username);
+            
+            //change color into green
+            $("#user_name").removeClass('non_available');
+            $("#user_name").addClass('available');
+        }
+        else{
+            //change color into red
+            $("#user_name").removeClass('available');
+            $("#user_name").addClass('non_available');
+        }
+        return username;
+    }
+    function remove_username(){
+        sessionStorage.removeItem('user_name');
+        $("#user_name").text('UNKNOWN');
+        $("#user_name").removeClass('available');
+        $("#user_name").addClass('non_available');
+    }
+
+    $(function(){
+        $("#login").click(function(e){
+            console.log('login');
+            var name=prompt('Input Name');
+            var password=prompt('input password');
+                if(name&&password){
+                    socket.emit('user:login',{name:name,password:password});
+                    update_session(name);
+                }
+             
+        });
+
+        $("#signin").click(function(e){
+            console.log('signin');
+            
+            var name=prompt('Input Name');
+            var password=prompt('input password');
+
+            if(name&&password){
+                socket.emit('user:create',{name:name,password:password});
+                update_session(name);
+                
+            }
+        });
+        
+        $("#logout").click(function(e){
+            
+            var name=$("#user_name").text();
+            if(name!=='UNKNOWN'){
+                socket.emit('user:logout',{name:name});
+                remove_username();
+                 
+            }
+        });
+
+        $("#broadcast_msg_send").click(function(){
+            var msg=$("#broadcast_msg").val();
+            var name=get_username();
+            
+            if(name&&msg){
+                socket.emit('msg:broadcast',{name:name, msg:msg});
+            }
+            else{
+                if(!msg) alert('Enter message')    ;
+                if(!name) alert('Please login');
+            }
+        });
+    });
+
+</script>
