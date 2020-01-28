@@ -1,9 +1,9 @@
  
 /* var connection=mysql.createConnection({
     host        :   'remotemysql.com',
-    user        :   '5CjE1VKLC7',
-    password    :   'BUIPQz3VnN',
-    database    :   '5CjE1VKLC7',
+    user        :   '',
+    password    :   '',
+    database    :   '',
 
 });
 
@@ -19,9 +19,9 @@ exports.get_pool=function(mysql){
     var pool    = mysql.createPool({
         connectionLimit :   50,
         host            :   'remotemysql.com',
-        user            :   '5CjE1VKLC7',
-        password        :   'BUIPQz3VnN',
-        database        :   '5CjE1VKLC7',
+        user            :   '',
+        password        :   '',
+        database        :   '',
         debug           :   false,
     });
     pool.on('connection',function(connection){
